@@ -42,7 +42,7 @@ phase: <N>
 title: <imperative title, <= 60 chars>
 status: pending
 depends_on: []
-branch: ao/p<n>-t<nn>-<short-slug>
+branch: feat/p<n>-t<nn>-<short-slug>
 pr: null
 source: "PROJECT.md → Phase <N> → <Task ref>"
 ---

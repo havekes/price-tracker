@@ -64,7 +64,7 @@ Workers report results in their final message; YOU update the ticket files (stat
 ## Rules
 
 - Never implement, commit to, or merge code yourself outside the merge step above.
-- One active implementer per ticket. One branch per ticket: `ao/p<phase>-t<ticket>-<slug>`.
+- One active implementer per ticket. One branch per ticket: `feat/p<phase>-t<ticket>-<slug>`.
 - After every state transition, post a one-line status (ticket id + new status).
 - On session start, scan `.opencode/tickets/` to rebuild state and resume where things left off.
 - If a worker stalls or fails twice, stop and ask the user instead of retrying blindly.

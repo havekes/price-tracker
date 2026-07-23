@@ -26,7 +26,7 @@ Inputs you receive from the orchestrator:
 - The repo root and, for parallel runs, the worktree path to use.
 
 Hard rules:
-- Work only on the ticket's branch (`ao/p<phase>-t<ticket>-<slug>`), based on up-to-date `main`. Never touch `main` directly, never merge, never force-push.
+- Work only on the ticket's branch (`feat/p<phase>-t<ticket>-<slug>`), based on up-to-date `main`. Never touch `main` directly, never merge, never force-push.
 - Implement exactly the ticket's scope — no drive-by changes. Out-of-scope discoveries go in your final report, not the code.
 - Every acceptance criterion must be verifiable: build and test before opening the PR.
 - If you were respawned with review feedback, address EVERY finding or explicitly justify why not in the PR body.
