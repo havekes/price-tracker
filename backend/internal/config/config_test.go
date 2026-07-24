@@ -6,6 +6,10 @@ import (
 )
 
 func TestLoadDefaults(t *testing.T) {
+	// Save and restore env vars so we don't leak modifications to other tests.
+	saved := saveEnvVars()
+	defer restoreEnvVars(saved)
+
 	// Unset any env vars that might interfere.
 	for _, key := range []string{"PORT", "PAPERLESS_BASE_URL", "PAPERLESS_TOKEN", "VISION_API_BASE_URL", "VISION_API_KEY", "DATABASE_URL"} {
 		os.Unsetenv(key)
@@ -78,5 +82,27 @@ func TestLoadPortNonNumeric(t *testing.T) {
 
 	if cfg.Port != 8080 {
 		t.Errorf("expected Port fallback 8080 for non-numeric value, got %d", cfg.Port)
+	}
+}
+
+// saveEnvVars captures current values of the config-relevant env vars.
+func saveEnvVars() map[string]string {
+	keys := []string{"PORT", "PAPERLESS_BASE_URL", "PAPERLESS_TOKEN", "VISION_API_BASE_URL", "VISION_API_KEY", "DATABASE_URL"}
+	saved := make(map[string]string, len(keys))
+	for _, k := range keys {
+		saved[k] = os.Getenv(k)
+	}
+	return saved
+}
+
+// restoreEnvVars sets each env var back to its saved value. If the saved value
+// is empty it unsets the variable (same as "was not set").
+func restoreEnvVars(saved map[string]string) {
+	for k, v := range saved {
+		if v == "" {
+			os.Unsetenv(k)
+		} else {
+			os.Setenv(k, v)
+		}
 	}
 }

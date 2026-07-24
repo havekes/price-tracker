@@ -4,13 +4,42 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"net/url"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/havekes/price-tracker/db"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
+
+// adminConnStr parses the databaseURL and returns a connection string targeting the
+// 'postgres' administrative database (for CREATE/DROP DATABASE).
+func adminConnStr(dsn string) (string, error) {
+	u, err := url.Parse(dsn)
+	if err != nil {
+		return "", err
+	}
+	// Strip leading slash from path, replace with "postgres".
+	parts := strings.SplitN(u.Path, "/", 2)
+	parts[1] = "postgres"
+	u.Path = strings.Join(parts, "/")
+	return u.String(), nil
+}
+
+// testConnStrDBName extracts the database-name segment from a DSN.
+func testConnStrDBName(dsn string) (string, error) {
+	u, err := url.Parse(dsn)
+	if err != nil {
+		return "", err
+	}
+	parts := strings.SplitN(u.Path, "/", 2)
+	if len(parts) < 2 || parts[1] == "" {
+		return "", fmt.Errorf("dsn %q has no database name segment", dsn)
+	}
+	return parts[1], nil
+}
 
 // databaseURL returns the DATABASE_URL from the environment or the default dev connection string.
 func databaseURL() string {
@@ -46,10 +75,15 @@ func TestMigrateIdempotent(t *testing.T) {
 }
 
 func TestMigrateAppliesSchemaOnEmptyTarget(t *testing.T) {
-	// Admin connection to the 'postgres' metadata database for managing throwaway databases.
-	adminConnStr := "postgres://price-tracker:price-tracker@localhost:5433/postgres?sslmode=disable"
+	connStr := databaseURL()
 
-	adminDB, err := sql.Open("pgx", adminConnStr)
+	// Admin connection to the 'postgres' metadata database for managing throwaway databases.
+	adminDSN, err := adminConnStr(connStr)
+	if err != nil {
+		t.Fatalf("failed to derive admin DSN: %v", err)
+	}
+
+	adminDB, err := sql.Open("pgx", adminDSN)
 	if err != nil {
 		t.Fatalf("failed to open admin connection: %v", err)
 	}
@@ -57,7 +91,7 @@ func TestMigrateAppliesSchemaOnEmptyTarget(t *testing.T) {
 
 	ctx := context.Background()
 	if err := adminDB.PingContext(ctx); err != nil {
-		t.Skipf("postgres not reachable at %s: %v (docker compose up -d required)", adminConnStr, err)
+		t.Skipf("postgres not reachable at %s: %v (docker compose up -d required)", adminDSN, err)
 	}
 
 	// Create a throwaway database so none of the tables exist yet.
@@ -71,8 +105,12 @@ func TestMigrateAppliesSchemaOnEmptyTarget(t *testing.T) {
 		}
 	}()
 
-	// Connection string pointing to the throwaway database (same host:port:credentials).
-	testConnStr := fmt.Sprintf("postgres://price-tracker:price-tracker@localhost:5433/%s?sslmode=disable", dbName)
+	// Connection string pointing to the throwaway database (same host:port:credentials, different db name).
+	origDBName, err := testConnStrDBName(connStr)
+	if err != nil {
+		t.Fatalf("failed to parse database name from DSN: %v", err)
+	}
+	testConnStr := strings.Replace(connStr, "/"+origDBName+"?", "/"+dbName+"?", 1)
 
 	testDB, err := sql.Open("pgx", testConnStr)
 	if err != nil {

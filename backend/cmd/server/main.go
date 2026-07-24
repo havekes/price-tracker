@@ -37,7 +37,6 @@ func main() {
 		slog.Error("failed to open database", "error", err)
 		os.Exit(1)
 	}
-	defer db.Close()
 
 	// Sensible pool defaults for a CLI-adjacent HTTP server.
 	db.SetMaxOpenConns(25)
