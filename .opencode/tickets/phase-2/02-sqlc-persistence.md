@@ -2,10 +2,10 @@
 id: P2-T02
 phase: 2
 title: Implement sqlc persistence & migration layer
-status: pending
+status: done
 depends_on: [P1-T01, P2-T03]
 branch: feat/p2-t02-sqlc-persistence
-pr: null
+pr: 9
 source: "PROJECT.md → Phase 2 → Task 2.2"
 ---
 
@@ -54,4 +54,21 @@ build on.
 - The transaction helper is the explicit seam for Phase 3's "atomic ingestion orchestrator" — make sure it actually wraps a single `*sql.Tx`.
 
 ## Review feedback
+
+**Verdict: REQUEST_CHANGES (PR #9) — cycle 1**
+
+1. [major] `.env.example:2` — `DATABASE_URL` still uses port 5432, but docker-compose.yml maps `5433:5432` and config.go defaults to `localhost:5433`. New contributors get connection refused. Update `.env.example` DATABASE_URL to `localhost:5433` to match config.go + docker-compose.yml + backend/README.md (all three must agree).
+2. [minor] migrate_test.go — `TestMigrateIdempotent` hits the early-return "already exists" branch only (docker-compose auto-loaded schema). The actual schema-apply branch (`db.ExecContext(schemaSQL)`) is never exercised. Add a case pointing Migrate at a throwaway empty DB/schema so the apply path + idempotent re-run are both covered.
+3. [minor] migrate.go opens its own *sql.DB; main.go doesn't construct a shared pool yet. Fine for Phase 2 — flagged for Phase 3 to instantiate a single *sql.DB/*store.Store after Migrate and inject it. No change required for this PR.
+4. [nit] store.go:14 comment "Embedds" → "Embeds".
+5. [nit] marketplace_link_test.go:96 comment "CHECk" → "CHECK".
+6. [nit] Two packages named `db` (backend/db embed + backend/internal/db generated). Consider import alias `dbembed` in main.go. Optional.
+
+Carry-over to Phase 3: instantiate a single *sql.DB pool + *store.Store after Migrate in main.go and inject store.Querier into the ingestion orchestrator.
+
+---
+
+**Cycle 2 re-review: APPROVED (PR #9)**
+
+All cycle-1 findings resolved. Port consistency fixed (5433 across .env.example/config.go/docker-compose.yml/READMEs). Migration apply branch now exercised by TestMigrateAppliesSchemaOnEmptyTarget (throwaway empty DB). Typos fixed. Build/vet/test green; sqlc postgres engine correct; Querier + WithTx seam solid for Phase 3. Non-blocking nits: migrate_test hardcodes localhost:5433 (could reuse env-aware helpers pattern); Migrate opens its own *sql.DB (Phase 3 carry-over to instantiate shared pool in main.go).
 
