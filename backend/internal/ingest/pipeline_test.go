@@ -183,9 +183,12 @@ func TestProcessDirectUpload(t *testing.T) {
 
 	pipeline := NewPipeline(&mockPaperlessClient{}, vClient, mStore, database)
 
-	err := pipeline.ProcessDirectUpload(ctx, []byte("img"), "image/jpeg", "Store", time.Now())
+	receipt, err := pipeline.ProcessDirectUpload(ctx, []byte("img"), "image/jpeg", "Store", time.Now())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
+	}
+	if receipt == nil {
+		t.Fatalf("expected receipt, got nil")
 	}
 	if mStore.persistCalls != 1 {
 		t.Errorf("expected 1 persist call, got %d", mStore.persistCalls)
@@ -244,7 +247,6 @@ func TestSyncPaperlessReceipts(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-
 	if success != 1 {
 		t.Errorf("expected 1 success, got %d", success)
 	}
