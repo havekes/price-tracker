@@ -1,11 +1,11 @@
 ---
 name: ticket-writing
-description: Use when breaking down a project phase, blueprint section, PROJECT.md phase, or a feature spec from .agent/features/ into small implementation tickets / work units in .agent/tickets/. Covers ticket sizing rules, dependency analysis, ordering, and the ticket file template.
+description: Use when breaking down a project phase, blueprint section, PROJECT.md phase, or a feature spec from .agent/features/ into small implementation tickets created as GitHub issues via the gh CLI. Covers ticket sizing rules, dependency analysis, ordering, the issue title/label conventions, and the issue body template.
 ---
 
 # Ticket Writing
 
-Distill one source of work — a phase of `PROJECT.md` **or** a feature spec from `.agent/features/` (produced by the `feature-definition` skill, status `ready`) — into the smallest set of tickets that fully delivers its goal.
+Distill one source of work — a phase of `PROJECT.md` **or** a feature spec from `.agent/features/` (produced by the `feature-definition` skill, status `ready`) — into the smallest set of tickets that fully delivers its goal. Each ticket is a **GitHub issue** created with `gh issue create`.
 
 You describe **what** each ticket must achieve. The **how** is decided later, per ticket, by the `ticket-planning` step — so keep `## Technical notes` to constraints and pointers, not implementation plans.
 
@@ -14,14 +14,12 @@ You describe **what** each ticket must achieve. The **how** is decided later, pe
 | | Phase source | Feature source |
 | --- | --- | --- |
 | Input | Phase number + exact text of `PROJECT.md` | Path to `.agent/features/<slug>.md` |
-| Ticket dir | `.agent/tickets/phase-<N>/` | `.agent/tickets/feature-<slug>/` |
 | Ticket id prefix | `P<N>` | `F-<slug>` |
-| Frontmatter key | `phase: <N>` | `feature: "<slug>"` |
-| `source:` field | `"PROJECT.md → Phase <N> → <Task ref>"` | `".agent/features/<slug>.md"` |
+| `source:` meta field | `"PROJECT.md → Phase <N> → <Task ref>"` | `".agent/features/<slug>.md"` |
 
-(A third ticket origin exists — `arch:` tickets written directly by the `architecture-review` skill into `.agent/tickets/arch/`. You never groom those.)
+(A third ticket origin exists — `ARCH-T` tickets created directly by the `architecture-review` skill. You never groom those.)
 
-Branch names follow the existing pattern with the lowercase prefix: `feat/p<n>-t<nn>-<slug>` or `feat/f-<slug>-t<nn>-<slug>`.
+Branch names follow the lowercase prefix pattern: `feat/p<n>-t<nn>-<slug>` or `feat/f-<slug>-t<nn>-<slug>`.
 
 For feature sources, groom from the spec's `## What needs to be done`, `## Scope`, and `## Definition of done` sections; treat its `## Open questions` defaults as decisions unless the user says otherwise.
 
@@ -35,7 +33,7 @@ For feature sources, groom from the spec's `## What needs to be done`, `## Scope
 
 ## Dependency analysis
 
-- For every ticket, set `depends_on` to the minimal list of ticket ids that must merge first.
+- For every ticket, set `depends_on` (in `## Meta`) to the minimal list of ticket ids that must merge first.
 - Tickets with disjoint `depends_on` closures are parallelizable — the orchestrator uses this, so be strict and accurate.
 - Order tickets so the phase stays mergeable: each merge leaves `main` working (builds + tests pass).
 
@@ -48,24 +46,26 @@ If the orchestrator gave you a previous architecture review: its open findings/c
 1. Read the full source text (phase section or feature spec) and its goal.
 2. Read the carry-over/findings section of the previous arch review (if provided).
 3. List candidate work units; apply the sizing rules; determine dependencies.
-4. Write one file per ticket at `<ticket-dir>/<NN>-<short-slug>.md` (`NN` = zero-padded execution order; ticket dir per the source table above).
-5. Final message: numbered ticket list (id, title, depends_on) + one sizing rationale line each.
+4. Create one GitHub issue per ticket, in execution order (`NN` = zero-padded execution order):
 
-## Ticket template
+   ```bash
+   gh issue create \
+     --title "<PREFIX>-T<NN>: <imperative title, <= 60 chars>" \
+     --label ticket --label status:pending \
+     --body "<issue body per the template below>"
+   ```
+
+   If the labels don't exist yet, create them first: `gh label create ticket --force` and `gh label create status:pending --force`.
+5. Final message: numbered ticket list (id, issue number + URL, title, depends_on) + one sizing rationale line each.
+
+## Issue body template
 
 ```markdown
----
-id: <PREFIX>-T<NN>
-phase: <N>              # phase source — OR —
-feature: "<slug>"       # feature source — OR —
-arch: "<YYYY-MM-DD>"    # arch-review source (only in tickets written by the arch-reviewer)
-title: <imperative title, <= 60 chars>
-status: pending
-depends_on: []
-branch: feat/<prefix-lowercase>-t<nn>-<short-slug>
-pr: null
-source: "PROJECT.md → Phase <N> → <Task ref>"   # or ".agent/features/<slug>.md" or ".agent/reviews/<date>-architecture.md"
----
+## Meta
+- id: <PREFIX>-T<NN>
+- depends_on: []            # ticket ids that must be closed first
+- branch: feat/<prefix-lowercase>-t<nn>-<short-slug>
+- source: "PROJECT.md → Phase <N> → <Task ref>"   # or ".agent/features/<slug>.md" or ".agent/reviews/<date>-architecture.md"
 
 ## Objective
 
@@ -90,12 +90,14 @@ source: "PROJECT.md → Phase <N> → <Task ref>"   # or ".agent/features/<slug>
 
 ## Plan
 
-<Empty at creation. The ticket-planning step fills this in: approach, files to touch, ordered steps, verification.>
+<Empty at creation. The ticket-planning step fills this in via gh issue edit: approach, files to touch, ordered steps, verification.>
 
 ## Review feedback
 
 <Empty at creation. Orchestrator appends PR-review findings here.>
 ```
+
+State is tracked by the single `status:*` label (owned by the orchestrator) — the body has no status field.
 
 ## Quality bar for your output
 

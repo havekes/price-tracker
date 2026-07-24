@@ -18,7 +18,7 @@ Before writing anything, look at what exists — the spec must be honest about t
 
 1. Read `PROJECT.md` — where this idea fits (or deliberately deviates from) the blueprint trajectory.
 2. Scan the relevant code structure — does a foundation for this already exist? What does the current UX/data model look like in the affected area?
-3. Scan `.agent/tickets/` and `.agent/reviews/` — in-flight or completed work that overlaps; arch-review findings that constrain the feature.
+3. Scan open ticket issues (`gh issue list --label ticket --state open`) and `.agent/reviews/` — in-flight or completed work that overlaps; arch-review findings that constrain the feature.
 
 Cite concrete files/modules when describing the current state. If the idea conflicts with something already built or planned, surface the conflict — don't paper over it.
 
@@ -84,6 +84,6 @@ date: <YYYY-MM-DD>
 ## Quality bar
 
 - A reader who never heard the raw idea understands what is being built and why, without asking you anything.
-- Every "Current state & gap" claim traces to a real file, ticket, or review.
+- Every "Current state & gap" claim traces to a real file, ticket/issue, or review.
 - The spec contains zero ticket IDs, branch names, or file-level implementation plans — those belong to ticket writing and planning.
 - Sizing is honest: if the idea is clearly multiple features, say so and spec only the first slice.

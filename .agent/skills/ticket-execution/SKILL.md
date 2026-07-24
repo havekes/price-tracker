@@ -1,20 +1,20 @@
 ---
 name: ticket-execution
-description: Use when executing a planned work ticket from .agent/tickets/ — branch/worktree setup, following the ticket's ## Plan section, commit style, running builds and tests, addressing PR review feedback, and opening the pull request with gh.
+description: Use when executing a planned work ticket (a GitHub issue labeled "ticket") — branch/worktree setup, following the issue's ## Plan section, commit style, running builds and tests, addressing PR review feedback, and opening the pull request with gh.
 ---
 
 # Ticket Execution
 
-Turn one planned ticket into one clean pull request. The ticket's `## Plan` section tells you **how** — your job is to execute it faithfully and verify every acceptance criterion.
+Turn one planned ticket into one clean pull request. The issue's `## Plan` section tells you **how** — your job is to execute it faithfully and verify every acceptance criterion.
 
 ## 1. Set up
 
-- Read the ticket file completely: objective, scope, acceptance criteria, `## Plan` (your contract for the how), `## Review feedback` (present on respawns), and `## Technical notes`.
-- If the ticket has **no `## Plan` section or it is empty**, stop and report back — the ticket-planning step was skipped; the orchestrator must run it first.
-- Base work on current `main`:
+- Read the issue completely with `gh issue view <N> --comments`: objective, scope, acceptance criteria, `## Plan` (your contract for the how), `## Review feedback` (present on respawns), and `## Technical notes`.
+- If the issue body has **no `## Plan` section or it is empty**, stop and report back — the ticket-planning step was skipped; the orchestrator must run it first.
+- The branch name is in the issue's `## Meta` section (`branch:`). Base work on current `main`:
   - Sequential run (main checkout): `git fetch origin && git checkout -b <branch> origin/main`
   - Parallel run (orchestrator assigned a worktree): `git fetch origin && git worktree add <worktree-path> -b <branch> origin/main`, then work **only inside that worktree**. If you were spawned with an isolated worktree workspace by `invoke_subagent`, use that workspace instead and skip the `git worktree add`.
-- `<branch>` is the ticket's frontmatter `branch` value. Never commit on `main`.
+- Never commit on `main`.
 
 ## 2. Execute the plan
 
@@ -43,7 +43,7 @@ PR body template:
 
 ```markdown
 ## Ticket
-<TICKET-ID> — <title> (`.agent/tickets/<dir>/<file>`)
+<TICKET-ID> — <title> (Refs #<issue-number>)
 
 ## What changed
 - <bullet per logical change>
@@ -61,12 +61,14 @@ PR body template:
 <Anything discovered but deliberately not done. Omit if empty.>
 ```
 
+Use `Refs #<issue-number>`, not `Closes` — the orchestrator closes the issue after merge.
+
 ## 5. Report back
 
-Final message to the orchestrator with: branch name, PR URL, implementation summary (bullets), exact verification commands + results, out-of-scope observations. Do not edit the ticket's status — the orchestrator owns state.
+Final message to the orchestrator with: branch name, PR URL, implementation summary (bullets), exact verification commands + results, out-of-scope observations. Do not touch the issue's labels or close it — the orchestrator owns state.
 
 ## Never
 
-- No merges, no force-push, no rebasing onto anything but `origin/main`, no edits to other tickets or ticket statuses.
+- No merges, no force-push, no rebasing onto anything but `origin/main`, no edits to other issues or their labels.
 - No unrequested refactors of code outside the ticket's blast radius.
 - No re-planning on the fly: if the plan is fundamentally wrong (not just stale), report back instead of silently rewriting the approach.

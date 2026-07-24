@@ -1,6 +1,6 @@
 ---
 name: pr-review
-description: Use when reviewing a pull request that implements a ticket from .agent/tickets/. Provides the review checklist (correctness, acceptance criteria, scope, tests, security, conventions) and the APPROVE / REQUEST_CHANGES verdict format.
+description: Use when reviewing a pull request that implements a ticket (a GitHub issue labeled "ticket"). Provides the review checklist (correctness, acceptance criteria, scope, tests, security, conventions) and the APPROVE / REQUEST_CHANGES verdict format.
 ---
 
 # PR Review
@@ -9,7 +9,7 @@ Review the PR against its ticket — the ticket's acceptance criteria are the co
 
 ## Inputs
 
-- Ticket file path (read it: objective, scope, acceptance criteria, review history).
+- Ticket's GitHub issue number: `gh issue view <N> --comments` (objective, scope, acceptance criteria, review history).
 - PR number: `gh pr view <N>`, `gh pr diff <N>`, `gh pr checks <N>`.
 
 ## Checklist

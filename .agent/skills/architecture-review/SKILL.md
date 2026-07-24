@@ -1,6 +1,6 @@
 ---
 name: architecture-review
-description: Use when performing an on-demand architecture health check of the codebase — evaluating structure, boundaries, data model, and tech choices against PROJECT.md goals, writing a report to .agent/reviews/, and emitting actionable architectural improvement tickets into .agent/tickets/arch/.
+description: Use when performing an on-demand architecture health check of the codebase — evaluating structure, boundaries, data model, and tech choices against PROJECT.md goals, writing a report to .agent/reviews/, and emitting actionable architectural improvement tickets as GitHub issues (id prefix ARCH-T) via the gh CLI.
 ---
 
 # Architecture Review
@@ -17,11 +17,11 @@ You assess the whole codebase (or the focus area the user named), not a single P
 4. **Contracts** — are API shapes, internal interfaces, and JSON schemas stable and documented enough for upcoming tickets to build on?
 5. **Cross-cutting concerns** — configuration, error handling strategy, logging, test strategy. Consistent or ad-hoc per ticket?
 6. **Technical debt** — shortcuts taken under ticket scope pressure. Classify by interest rate: what compounds vs. what's inert?
-7. **Prior reviews** — read earlier reports in `.agent/reviews/` and open tickets in `.agent/tickets/arch/`: were previous findings addressed or silently dropped? Never re-emit a finding that already has an open ticket.
+7. **Prior reviews** — read earlier reports in `.agent/reviews/` and open ARCH tickets (`gh issue list --label ticket --state open --search "ARCH-T in:title"`): were previous findings addressed or silently dropped? Never re-emit a finding that already has an open ticket.
 
 ## Method
 
-- Read `PROJECT.md` (the trajectory), recent tickets in `.agent/tickets/`, and merged history since the last review (`git log`/`git show` on merge commits).
+- Read `PROJECT.md` (the trajectory), open ticket issues (`gh issue list --label ticket --state open`), and merged history since the last review (`git log`/`git show` on merge commits).
 - Read the actual code structure — judge what exists, not what was planned.
 - Every finding cites concrete files/modules. No vague "could be cleaner".
 
@@ -42,7 +42,7 @@ verdict: sound | sound-with-concerns | needs-remediation
 ### 1. <title> [severity: concern | risk | debt]
 **Observation:** <what exists, with file/module references>
 **Impact:** <what it costs if left alone>
-**Recommendation:** <concrete action — ticketed as <TICKET-ID>, or "observation only" with why>
+**Recommendation:** <concrete action — ticketed as <TICKET-ID> (#<issue-number>), or "observation only" with why>
 
 ### 2. ...
 
@@ -53,13 +53,21 @@ verdict: sound | sound-with-concerns | needs-remediation
 <For each open finding/carry-over from previous reports and each open ARCH ticket: addressed / partially / still open / dropped (why). Omit if no prior review exists.>
 ```
 
-## Output 2 — tickets: `.agent/tickets/arch/<NN>-<slug>.md`
+## Output 2 — tickets as GitHub issues
 
-Every **actionable** finding becomes a ticket using the standard ticket template (see the `ticket-writing` skill), with:
+Every **actionable** finding becomes a GitHub issue using the standard ticket body template (see the `ticket-writing` skill), created with:
+
+```bash
+gh issue create \
+  --title "ARCH-T<NN>: <imperative title>" \
+  --label ticket --label status:pending \
+  --body "<issue body per the ticket-writing template>"
+```
+
+with:
 
 - id `ARCH-T<NN>` (`NN` = zero-padded recommended execution order, blocking issues first)
-- frontmatter `arch: "<YYYY-MM-DD>"` (the review date), branch `feat/arch-t<nn>-<slug>`
-- `source:` pointing at the report file
+- `## Meta` fields: `branch: feat/arch-t<nn>-<slug>`, `source:` pointing at the report file path
 - scope small enough for one PR — split the finding if it isn't
 - acceptance criteria that leave the codebase verifiably healthier, mechanically checkable
 - `depends_on` between the arch tickets where order matters (e.g. a contract change before its consumers)
@@ -69,5 +77,5 @@ Findings that are pure observations (no action worth a PR) stay in the report on
 ## Rules
 
 - A `needs-remediation` verdict requires at least one ticket whose technical notes mark it as blocking upcoming work.
-- You write the report and ticket files, then a summary as your final message: verdict, top findings, and the ticket list (id, title, depends_on).
-- You never change implementation code and never set ticket status — tickets start as `pending`, the orchestrator owns state from there.
+- You write the report file and create the issues, then a summary as your final message: verdict, top findings, and the ticket list (id, issue number, title, depends_on).
+- You never change implementation code and never touch status labels — tickets start as `status:pending`, the orchestrator owns state from there.
