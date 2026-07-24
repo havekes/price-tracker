@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 )
 
 const createProduct = `-- name: CreateProduct :one
@@ -137,4 +138,48 @@ func (q *Queries) UpdateProduct(ctx context.Context, arg UpdateProductParams) (P
 		&i.CreatedAt,
 	)
 	return i, err
+}
+
+const listProductsWithPrices = `-- name: ListProductsWithPrices :many
+SELECT p.id, p.display_name, p.base_unit, AVG(pr.unit_price)::DOUBLE PRECISION AS latest_avg_price
+FROM product p
+LEFT JOIN raw_item ri ON p.id = ri.product_id
+LEFT JOIN price_record pr ON ri.id = pr.raw_item_id
+GROUP BY p.id, p.display_name, p.base_unit
+ORDER BY p.display_name
+`
+
+type ListProductsWithPricesRow struct {
+	ID             int64
+	DisplayName    string
+	BaseUnit       string
+	LatestAvgPrice sql.NullFloat64
+}
+
+func (q *Queries) ListProductsWithPrices(ctx context.Context) ([]ListProductsWithPricesRow, error) {
+	rows, err := q.db.QueryContext(ctx, listProductsWithPrices)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListProductsWithPricesRow{}
+	for rows.Next() {
+		var i ListProductsWithPricesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.DisplayName,
+			&i.BaseUnit,
+			&i.LatestAvgPrice,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

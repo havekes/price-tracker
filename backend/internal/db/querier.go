@@ -47,6 +47,7 @@ type Querier interface {
 	ListMarketplaceLinksByProduct(ctx context.Context, productAID int64) ([]MarketplaceLink, error)
 	ListPriceRecords(ctx context.Context) ([]PriceRecord, error)
 	ListProducts(ctx context.Context) ([]Product, error)
+	ListProductsWithPrices(ctx context.Context) ([]ListProductsWithPricesRow, error)
 	ListRawItemsByReceipt(ctx context.Context, receiptID int64) ([]RawItem, error)
 	ListReceipts(ctx context.Context) ([]Receipt, error)
 	ListReceiptsByCorrespondent(ctx context.Context, correspondentID int64) ([]Receipt, error)
