@@ -7,6 +7,8 @@ package db
 
 import (
 	"context"
+	"database/sql"
+	"time"
 )
 
 const createProduct = `-- name: CreateProduct :one
@@ -77,6 +79,101 @@ func (q *Queries) GetProductByName(ctx context.Context, displayName string) (Pro
 		&i.CreatedAt,
 	)
 	return i, err
+}
+
+const listLinkedProducts = `-- name: ListLinkedProducts :many
+SELECT p.id, p.display_name, p.base_unit, p.created_at 
+FROM product p
+JOIN marketplace_link ml ON (ml.product_a_id = p.id OR ml.product_b_id = p.id)
+WHERE (ml.product_a_id = $1 OR ml.product_b_id = $1) 
+  AND p.id != $1
+ORDER BY p.display_name
+`
+
+func (q *Queries) ListLinkedProducts(ctx context.Context, productAID int64) ([]Product, error) {
+	rows, err := q.db.QueryContext(ctx, listLinkedProducts, productAID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Product{}
+	for rows.Next() {
+		var i Product
+		if err := rows.Scan(
+			&i.ID,
+			&i.DisplayName,
+			&i.BaseUnit,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPriceHistoryByProduct = `-- name: ListPriceHistoryByProduct :many
+SELECT 
+    pr.id,
+    pr.total_price,
+    pr.unit_price,
+    ri.raw_text,
+    ri.raw_quantity,
+    c.name AS correspondent_name,
+    r.purchased_at
+FROM price_record pr
+JOIN raw_item ri ON pr.raw_item_id = ri.id
+JOIN receipt r ON ri.receipt_id = r.id
+JOIN correspondent c ON r.correspondent_id = c.id
+WHERE ri.product_id = $1
+ORDER BY r.purchased_at DESC
+`
+
+type ListPriceHistoryByProductRow struct {
+	ID                int64
+	TotalPrice        float64
+	UnitPrice         sql.NullFloat64
+	RawText           string
+	RawQuantity       sql.NullString
+	CorrespondentName string
+	PurchasedAt       time.Time
+}
+
+func (q *Queries) ListPriceHistoryByProduct(ctx context.Context, productID sql.NullInt64) ([]ListPriceHistoryByProductRow, error) {
+	rows, err := q.db.QueryContext(ctx, listPriceHistoryByProduct, productID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListPriceHistoryByProductRow{}
+	for rows.Next() {
+		var i ListPriceHistoryByProductRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.TotalPrice,
+			&i.UnitPrice,
+			&i.RawText,
+			&i.RawQuantity,
+			&i.CorrespondentName,
+			&i.PurchasedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listProducts = `-- name: ListProducts :many
