@@ -29,3 +29,11 @@ WHERE id = $1;
 -- name: GetProductByName :one
 SELECT * FROM product
 WHERE display_name = $1 LIMIT 1;
+
+-- name: ListProductsWithPrices :many
+SELECT p.id, p.display_name, p.base_unit, AVG(pr.unit_price)::DOUBLE PRECISION AS latest_avg_price
+FROM product p
+LEFT JOIN raw_item ri ON p.id = ri.product_id
+LEFT JOIN price_record pr ON ri.id = pr.raw_item_id
+GROUP BY p.id, p.display_name, p.base_unit
+ORDER BY p.display_name;
