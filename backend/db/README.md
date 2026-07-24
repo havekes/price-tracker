@@ -7,10 +7,13 @@ idempotently (`CREATE TABLE IF NOT EXISTS …`).
 ## Entity-Relationship Overview
 
 ```
+─── Primary (ownership) relationships (all N:1 / 1:1):
 correspondent 1──N receipt 1──N raw_item 1──1 price_record
                                     │
-                                    N──1 product  N──N product
-                                                  (via marketplace_link)
+                                    N──1 product
+
+─── Cross-store linking via marketplace_link (N:N, symmetric):
+               product ──── marketplace_link ──── product
 ```
 
 - **correspondent** — A merchant or store. Each receipt belongs to one
@@ -80,14 +83,57 @@ Then `unit_price = 10.00 / 2000 = 0.005` (price per gram).
 | `price_record.raw_item_id` → `raw_item.id` | `CASCADE` | Price record is an attribute of the item |
 | `marketplace_link.product_a_id` / `product_b_id` → `product.id` | `CASCADE` | Removing a product cleans up its marketplace links |
 
+## Foreign-Key Enforcement (Per-Connection)
+
+SQLite's `PRAGMA foreign_keys = ON;` is **connection-scoped**: it only affects the
+connection that executed the pragma and is NOT persisted in the database file.
+New or pooled connections — including connections opened by the application at
+startup — will silently have foreign-key enforcement **disabled** by default,
+risking referential corruption.
+
+### Every application connection must enable FKs
+
+For **modernc.org/sqlite** (pure-Go driver, the project's choice), append
+`?_foreign_keys=on` to the DSN:
+
+```go
+db, err := sql.Open("sqlite", "/path/to/data.db?_foreign_keys=on")
+```
+
+For **mattn/go-sqlite3** (CGO driver), use `_foreign_keys=1`:
+
+```go
+db, err := sql.Open("sqlite3", "/path/to/data.db?_foreign_keys=1")
+```
+
+### Connection-hook alternative
+
+If you prefer to configure it in code (e.g. to log or test with FKs off), use a
+`database/sql` connection hook via `db.SetConnMaxLifetime` or a driver-level
+`Connector` that executes `PRAGMA foreign_keys = ON` on every new connection.
+
+> The `PRAGMA foreign_keys = ON;` at the top of `schema.sql` applies **only to
+> the connection that loads the schema** (ensuring DDL-time FK validation). It
+> does **not** persist; every application connection must independently enable FKs.
+
 ## Timestamp Format
 
-All timestamps use ISO-8601 with millisecond precision:
-`strftime('%Y-%m-%dT%H:%M:%fZ', 'now')`.
+The schema uses two timestamp conventions:
 
-Tables that support mutable data (`product`, `price_record`) also carry an
-`updated_at` column, updated on creation (the ingestion pipeline may update it
-explicitly on mutation).
+| Column(s) | Type / Format | Precision |
+|-----------|---------------|-----------|
+| `receipt.purchased_at` | DATE (ISO-8601 date, `YYYY-MM-DD`) | Day only |
+| `created_at`, `updated_at` (all tables) | TEXT (ISO-8601, `YYYY-MM-DDTHH:MM:SS.mmmZ`) | Milliseconds |
+
+- `receipt.purchased_at` stores the date of purchase (date-only, no time
+  component). The column is typed `TEXT` (SQLite has no native DATE type)
+  and should contain values like `"2025-07-15"`.
+- All `created_at` / `updated_at` columns use full millisecond ISO-8601:
+  `strftime('%Y-%m-%dT%H:%M:%fZ', 'now')`.
+
+Tables that support mutable data (`product`, `price_record`) carry an
+`updated_at` column, populated on creation (the ingestion pipeline may update
+it explicitly on mutation).
 
 ## Running the Schema
 

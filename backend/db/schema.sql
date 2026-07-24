@@ -7,7 +7,7 @@
 -- Uses CREATE TABLE IF NOT EXISTS so re-running is idempotent.
 -- =============================================================================
 
-PRAGMA foreign_keys = ON;
+PRAGMA foreign_keys = ON;  -- Connection-scoped only! See README "Foreign-Key Enforcement" section.
 
 -- ---------------------------------------------------------------------------
 -- correspondent — A merchant, store, or vendor from which receipts are
@@ -97,7 +97,7 @@ CREATE TABLE IF NOT EXISTS marketplace_link (
     product_b_id    INTEGER NOT NULL REFERENCES product(id) ON DELETE CASCADE,
     created_at      TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
     UNIQUE (product_a_id, product_b_id),
-    CHECK (product_a_id < product_b_id),
+    CHECK (product_a_id < product_b_id),  -- Canonicalizes pair order AND disallows self-links (a < a is always false)
     FOREIGN KEY (product_a_id) REFERENCES product(id) ON DELETE CASCADE,
     FOREIGN KEY (product_b_id) REFERENCES product(id) ON DELETE CASCADE
 );
