@@ -30,7 +30,7 @@ func Load() Config {
 		VisionAPIBaseURL: getEnv("VISION_API_BASE_URL", "https://ai.havek.es/api"),
 		VisionAPIKey:     getEnv("VISION_API_KEY", ""),
 		DatabaseURL:      getEnv("DATABASE_URL", "postgres://price-tracker:price-tracker@localhost:5432/price-tracker?sslmode=disable"),
-}
+	}
 }
 
 func getEnv(key, fallback string) string {
