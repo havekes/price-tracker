@@ -13,7 +13,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
-	"github.com/havekes/price-tracker/db"
+	dbembed "github.com/havekes/price-tracker/db"
 	"github.com/havekes/price-tracker/internal/config"
 	"github.com/havekes/price-tracker/internal/server"
 	"github.com/havekes/price-tracker/internal/store"
@@ -31,7 +31,7 @@ func main() {
 
 	// Apply database migration before starting the server.
 	// Idempotent — safe to run on every startup.
-	if err := store.Migrate(cfg.DatabaseURL, db.Schema); err != nil {
+	if err := store.Migrate(cfg.DatabaseURL, dbembed.Schema); err != nil {
 		slog.Error("database migration failed", "error", err)
 		os.Exit(1)
 	}

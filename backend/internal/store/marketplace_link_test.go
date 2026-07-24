@@ -101,7 +101,7 @@ func TestMarketplaceLinkCheckConstraint(t *testing.T) {
 	pA, _ := q.CreateProduct(ctx, db.CreateProductParams{DisplayName: "P1", BaseUnit: "unit"})
 	pB, _ := q.CreateProduct(ctx, db.CreateProductParams{DisplayName: "P2", BaseUnit: "unit"})
 
-	// Swap to test the CHECk constraint: product_a_id must be < product_b_id.
+	// Swap to test the CHECK constraint: product_a_id must be < product_b_id.
 	small, big := pA.ID, pB.ID
 	if small > big {
 		small, big = big, small

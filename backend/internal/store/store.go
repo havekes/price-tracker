@@ -11,7 +11,7 @@ import (
 )
 
 // Querier is the interface for all database CRUD operations.
-// Embedds the sqlc-generated db.Querier and adds a WithTx helper.
+// Embeds the sqlc-generated db.Querier and adds a WithTx helper.
 //
 // Phase 3/4 should accept Querier in their constructors so they can be tested
 // with a mock or a real database interchangeably.
