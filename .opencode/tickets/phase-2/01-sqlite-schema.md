@@ -2,10 +2,10 @@
 id: P2-T01
 phase: 2
 title: Design relational SQLite schema for receipts & prices
-status: pending
+status: cancelled
 depends_on: [P1-T01]
 branch: feat/p2-t01-sqlite-schema
-pr: null
+pr: 7
 source: "PROJECT.md → Phase 2 → Task 2.1"
 ---
 
@@ -58,4 +58,24 @@ contract that P2-T02 generates type-safe code from and that Phase 3 writes into.
 - This file is the seam — Phase 3 (ingestion) and Phase 4 (API) depend on these table/column names, so name them carefully and document any deviation in the README.
 
 ## Review feedback
+
+**Verdict: REQUEST_CHANGES (PR #7) — cycle 1**
+
+Findings to address:
+1. [major] schema.sql:14 + README — `PRAGMA foreign_keys = ON;` is connection-scoped, not persisted; new/pooled connections silently have FKs OFF, risking referential corruption in P3/P4. Fix: add prominent README section stating FK enforcement is per-connection and must be enabled on every connection (DSN `?_foreign_keys=on` for modernc.org/sqlite, or a connection hook); annotate the PRAGMA line in schema.sql that it only applies to the schema-loading connection (or remove it and document solely in README).
+2. [minor] README ER diagram — `raw_item N──1 product` vs `product N──N product (marketplace_link)` are visually ambiguous; redraw distinctly or add a one-line legend.
+3. [nit] schema.sql:97-99 — add brief comment that CHECK(product_a_id < product_b_id) also intentionally disallows self-links.
+4. [nit] README "Timestamp Format" — clarify `receipt.purchased_at` is date-only (DATE) while created_at/updated_at are full millisecond timestamps.
+
+Gitignore carry-over (from Phase 1 arch review): `.gitignore` lacks `backend/data/`, `*.db`, `*.db-wal`, `*.db-shm`. Not a blocker for THIS PR (no DB file committed), but MUST be addressed in P2-T02.
+
+---
+
+**CANCELLED — superseded by P2-T03 (Postgres pivot).** PR #7 closed without merge. The schema design (table shapes, FK semantics, unit-normalization columns, marketplace_link uniqueness) carries forward into P2-T03 — only the dialect and runtime change from embedded SQLite to Postgres + docker-compose.
+
+---
+
+**Cycle 2 re-review: APPROVED (PR #7)**
+
+All 4 prior findings addressed and acceptance criteria re-verified. Non-blocking nit remains: README "Connection-hook alternative" section cites `db.SetConnMaxLifetime` (controls connection lifetime, not per-connection PRAGMA); correct pattern is a custom `driver.Connector` or modernc's `?_pragma=foreign_keys(1)` DSN param. Primary DSN path (`?_foreign_keys=on`) is correct — fix the alternative wording in a follow-up if desired.
 

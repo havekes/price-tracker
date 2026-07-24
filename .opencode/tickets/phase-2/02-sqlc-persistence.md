@@ -3,7 +3,7 @@ id: P2-T02
 phase: 2
 title: Implement sqlc persistence & migration layer
 status: pending
-depends_on: [P1-T01, P2-T01]
+depends_on: [P1-T01, P2-T03]
 branch: feat/p2-t02-sqlc-persistence
 pr: null
 source: "PROJECT.md → Phase 2 → Task 2.2"
@@ -46,10 +46,10 @@ build on.
 
 ## Technical notes
 
-- Depends on P1-T01 (backend runtime + config, specifically `DB_PATH`) and P2-T01 (`backend/db/schema.sql`).
-- Driver: `modernc.org/sqlite` keeps the build CGO-free — strongly preferred for reproducible builds. If CGO `mattn/go-sqlite3` is chosen instead, document the build prerequisite in `backend/README.md`.
-- sqlc SQLite support requires the `sqlite` engine in `sqlc.yaml`; verify the installed `sqlc` version supports it (v1.25+).
-- Embed schema: `//go:embed db/schema.sql` in the store package and run it on `db.Ping`/startup when `sqlite_master` lacks the tables.
+- Depends on P1-T01 (backend runtime + config, now `DATABASE_URL` instead of `DB_PATH`) and P2-T03 (`backend/db/schema.sql` in Postgres dialect + running Postgres via docker-compose).
+- Driver: `github.com/jackc/pgx/v5` (pure Go, CGO-free, the standard Postgres driver) — NOT modernc.org/sqlite. The datastore pivoted from SQLite to Postgres in P2-T03.
+- sqlc config: use the `postgres` engine in `sqlc.yaml` (NOT `sqlite`). Verify the installed `sqlc` version supports the postgres engine (v1.25+).
+- Embed schema: `//go:embed db/schema.sql` in the store package and run it on startup against the configured `DATABASE_URL` (Postgres) when tables are missing (check `information_schema.tables`). P2-T03's docker-compose auto-loads schema.sql on first init for dev; this Go-side runner handles non-dev/prod starts.
 - Keep query files one-entity-per-file for reviewability.
 - The transaction helper is the explicit seam for Phase 3's "atomic ingestion orchestrator" — make sure it actually wraps a single `*sql.Tx`.
 
