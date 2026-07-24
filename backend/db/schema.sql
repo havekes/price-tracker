@@ -33,7 +33,7 @@ COMMENT ON COLUMN receipt.raw_file_ref IS 'Path or reference to the original rec
 -- Product: a canonical product identified after normalizing raw item text.
 CREATE TABLE IF NOT EXISTS product (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    display_name TEXT NOT NULL,
+    display_name TEXT NOT NULL UNIQUE,
     base_unit TEXT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -50,7 +50,8 @@ CREATE TABLE IF NOT EXISTS raw_item (
     raw_quantity TEXT,
     quantity_value DOUBLE PRECISION,
     quantity_unit TEXT,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (receipt_id, raw_text)
 );
 
 COMMENT ON TABLE raw_item IS 'A line item as it appears verbatim on a receipt';
@@ -92,6 +93,11 @@ COMMENT ON CONSTRAINT marketplace_link_product_a_id_product_b_id_check ON market
 -- Indexes for hot lookup paths
 CREATE INDEX IF NOT EXISTS idx_receipt_correspondent_id ON receipt(correspondent_id);
 CREATE INDEX IF NOT EXISTS idx_receipt_purchased_at ON receipt(purchased_at);
+
+-- Partial unique index for idempotent Paperless receipt ingestion.
+-- Prevents duplicate receipt rows when external_doc_id is non-null (Paperless imports),
+-- while allowing multiple uploaded receipts (external_doc_id IS NULL) for the same correspondent.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_receipt_external_doc ON receipt(correspondent_id, external_doc_id) WHERE external_doc_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_raw_item_receipt_id ON raw_item(receipt_id);
 CREATE INDEX IF NOT EXISTS idx_raw_item_product_id ON raw_item(product_id);
 CREATE INDEX IF NOT EXISTS idx_price_record_raw_item_id ON price_record(raw_item_id);

@@ -6,8 +6,9 @@ A receipt parsing and price tracking application — ingest receipts from Paperl
 
 ```
 .
-├── backend/        # Go API server
-├── frontend/       # SvelteKit web app (coming in Phase 1)
+├── backend/        # Go API server (cmd/server, internal/store, internal/server, etc.)
+├── frontend/       # SvelteKit web app (Tailwind CSS, shadcn-svelte)
+├── docker-compose.yml  # PostgreSQL 16 dev database
 ├── .env.example    # Environment variable reference
 └── PROJECT.md      # Full implementation plan
 ```

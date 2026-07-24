@@ -8,10 +8,11 @@ import (
 )
 
 func TestHealthHandler(t *testing.T) {
+	srv := &Server{}
 	req := httptest.NewRequest(http.MethodGet, "/api/health", nil)
 	rec := httptest.NewRecorder()
 
-	HealthHandler(rec, req)
+	srv.HealthHandler(rec, req)
 
 	res := rec.Result()
 	defer res.Body.Close()
