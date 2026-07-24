@@ -3,7 +3,7 @@
   "default_agent": "orchestrator",
   "agent": {
     "implementer": {
-      "model": "opencode/deepseek-v4-flash"
+      "model": "opencode/deepseek-v4-flash-free"
     }
   }
 }

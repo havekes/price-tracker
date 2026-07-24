@@ -2,10 +2,10 @@
 id: P1-T02
 phase: 1
 title: Scaffold SvelteKit + Tailwind + shadcn-svelte frontend
-status: pending
+status: done
 depends_on: []
 branch: feat/p1-t02-sveltekit-shadcn-frontend
-pr: null
+pr: 6
 source: "PROJECT.md → Phase 1 → Task 1.2"
 ---
 
@@ -50,4 +50,13 @@ feature work in later phases can call `/api/*` without CORS friction.
 - Root `.gitignore` (from P1-T01) already covers `frontend/node_modules` and `frontend/build`; if not, append frontend-specific ignores here.
 
 ## Review feedback
+
+**Verdict: APPROVED (PR #6)**
+
+Criteria check: all 7 acceptance criteria met and independently verified (npm install, dev server, shadcn Button with bg-primary theme styling + Tailwind utilities, build, /api proxy -> :8080, components.json valid, scope clean under frontend/).
+
+Findings (non-blocking, nit):
+- [nit] frontend/.vscode/{settings.json,extensions.json} — scaffold-generated editor config committed; optional to gitignore .vscode/ in a follow-up.
+
+Notes: Svelte 5 runes mode enabled; adapter-static SPA mode with fallback index.html — revisit if any later route needs prerendering. Proxy key is `/api` (prefix match) which correctly matches `/api/health` etc.
 

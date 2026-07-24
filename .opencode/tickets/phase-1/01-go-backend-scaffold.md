@@ -2,10 +2,10 @@
 id: P1-T01
 phase: 1
 title: Scaffold Go backend with routing & env config
-status: pending
+status: done
 depends_on: []
 branch: feat/p1-t01-go-backend-scaffold
-pr: null
+pr: 5
 source: "PROJECT.md → Phase 1 → Task 1.1"
 ---
 
@@ -51,4 +51,17 @@ every later backend ticket (persistence, ingestion, API) builds on.
 - Keep the dependency list small. Phase 2 will add the SQLite driver and sqlc.
 
 ## Review feedback
+
+**Verdict: APPROVED (PR #5)**
+
+Criteria check: all 8 acceptance criteria met and independently verified (build, vet, health 200 {"status":"ok"}, env config + .env.example, graceful shutdown, root .gitignore coverage, scope clean).
+
+Findings (non-blocking, minor/nit):
+- [minor] cmd/server/main.go:33 — chi `middleware.Logger` emits plain-text request logs that mix with the slog JSON handler; replace with a slog-based request logger for consistent JSON output.
+- [minor] main.go:74-78 — healthHandler has no automated test; add main_test.go (or move handler to internal/) to establish the testing pattern later tickets inherit.
+- [nit] main.go:51 — `os.Interrupt` + `syscall.SIGINT` registered twice (redundant on Unix).
+- [nit] config/config.go:42-49 — non-numeric PORT silently falls back to default; slog.Warn on parse failure.
+- [nit] go.mod:3 — pin go 1.26 (minor), not 1.26.5 (patch).
+
+Carry-overs: JSON-only logging + test pattern are worth addressing before later backend tickets compound these defaults.
 
