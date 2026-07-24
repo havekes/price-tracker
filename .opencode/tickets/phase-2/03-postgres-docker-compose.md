@@ -2,10 +2,10 @@
 id: P2-T03
 phase: 2
 title: Migrate persistence from SQLite to Postgres with docker-compose dev environment
-status: pending
+status: done
 depends_on: [P1-T01]
 branch: feat/p2-t03-postgres-docker-compose
-pr: null
+pr: 8
 source: "Architecture pivot — supersedes P2-T01 (SQLite schema, PR #7 closed)"
 ---
 
@@ -80,3 +80,7 @@ and runtime change.
 - Do NOT wire up the Go database connection or sqlc here — that's P2-T02. This ticket is infrastructure + schema dialect + config.
 
 ## Review feedback
+
+**Verdict: APPROVED (PR #8) — one trivial gofmt fix requested**
+
+1. [minor] backend/internal/config/config.go:36 — struct-literal closing brace at column 0 instead of tab-indented; gofmt violation that would fail a gofmt CI gate. Run `gofmt -w backend/internal/config/config.go`. Non-blocking.
