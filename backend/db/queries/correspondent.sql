@@ -23,3 +23,7 @@ RETURNING *;
 -- name: DeleteCorrespondent :exec
 DELETE FROM correspondent
 WHERE id = $1;
+
+-- name: GetCorrespondentByName :one
+SELECT * FROM correspondent
+WHERE name = $1 LIMIT 1;

@@ -47,6 +47,18 @@ func (q *Queries) GetCorrespondent(ctx context.Context, id int64) (Correspondent
 	return i, err
 }
 
+const getCorrespondentByName = `-- name: GetCorrespondentByName :one
+SELECT id, name, created_at FROM correspondent
+WHERE name = $1 LIMIT 1
+`
+
+func (q *Queries) GetCorrespondentByName(ctx context.Context, name string) (Correspondent, error) {
+	row := q.db.QueryRowContext(ctx, getCorrespondentByName, name)
+	var i Correspondent
+	err := row.Scan(&i.ID, &i.Name, &i.CreatedAt)
+	return i, err
+}
+
 const listCorrespondents = `-- name: ListCorrespondents :many
 SELECT id, name, created_at FROM correspondent
 ORDER BY name

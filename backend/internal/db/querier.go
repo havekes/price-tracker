@@ -34,10 +34,12 @@ type Querier interface {
 	DeleteRawItem(ctx context.Context, id int64) error
 	DeleteReceipt(ctx context.Context, id int64) error
 	GetCorrespondent(ctx context.Context, id int64) (Correspondent, error)
+	GetCorrespondentByName(ctx context.Context, name string) (Correspondent, error)
 	GetMarketplaceLink(ctx context.Context, id int64) (MarketplaceLink, error)
 	GetPriceRecord(ctx context.Context, id int64) (PriceRecord, error)
 	GetPriceRecordByRawItem(ctx context.Context, rawItemID int64) (PriceRecord, error)
 	GetProduct(ctx context.Context, id int64) (Product, error)
+	GetProductByName(ctx context.Context, displayName string) (Product, error)
 	GetRawItem(ctx context.Context, id int64) (RawItem, error)
 	GetReceipt(ctx context.Context, id int64) (Receipt, error)
 	ListCorrespondents(ctx context.Context) ([]Correspondent, error)
