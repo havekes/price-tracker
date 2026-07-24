@@ -17,7 +17,10 @@ import (
 
 	dbembed "github.com/havekes/price-tracker/db"
 	"github.com/havekes/price-tracker/internal/config"
+	"github.com/havekes/price-tracker/internal/ingest"
+	"github.com/havekes/price-tracker/internal/paperless"
 	"github.com/havekes/price-tracker/internal/server"
+	"github.com/havekes/price-tracker/internal/vision"
 	"github.com/havekes/price-tracker/internal/store"
 )
 
@@ -52,7 +55,12 @@ func main() {
 
 	// Build the dependency graph: *sql.DB → store.Querier → server.Server.
 	querier := store.New(db)
-	srv := server.New(querier)
+	
+	pClient := paperless.NewClient(cfg.PaperlessBaseURL, cfg.PaperlessToken, &http.Client{Timeout: 30 * time.Second})
+	vClient := vision.NewClient(cfg)
+	pipeline := ingest.NewPipeline(pClient, vClient, querier, db)
+	
+	srv := server.New(querier, pipeline)
 
 	r := chi.NewRouter()
 
@@ -70,6 +78,7 @@ func main() {
 
 	// Routes
 	r.Get("/api/health", srv.HealthHandler)
+	r.Post("/api/receipts/upload", srv.UploadReceiptHandler)
 
 	addr := fmt.Sprintf(":%d", cfg.Port)
 	httpSrv := &http.Server{

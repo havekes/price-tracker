@@ -112,10 +112,10 @@ func (p *Pipeline) ProcessPaperlessDocument(ctx context.Context, docID int) erro
 	return nil
 }
 
-func (p *Pipeline) ProcessDirectUpload(ctx context.Context, imageBytes []byte, mimeType string, correspondentName string, purchaseDate time.Time) error {
+func (p *Pipeline) ProcessDirectUpload(ctx context.Context, imageBytes []byte, mimeType string, correspondentName string, purchaseDate time.Time) (*vision.ExtractedReceipt, error) {
 	receipt, err := p.vision.ExtractReceipt(ctx, imageBytes, mimeType)
 	if err != nil {
-		return fmt.Errorf("failed to extract receipt from upload: %w", err)
+		return nil, fmt.Errorf("failed to extract receipt from upload: %w", err)
 	}
 
 	items := make([]IngestItemInput, len(receipt.Items))
@@ -141,19 +141,19 @@ func (p *Pipeline) ProcessDirectUpload(ctx context.Context, imageBytes []byte, m
 
 	tx, err := p.db.BeginTx(ctx, nil)
 	if err != nil {
-		return fmt.Errorf("failed to begin transaction: %w", err)
+		return nil, fmt.Errorf("failed to begin transaction: %w", err)
 	}
 	defer tx.Rollback()
 
 	if err := PersistReceipt(ctx, p.store, tx, input); err != nil {
-		return fmt.Errorf("failed to persist receipt for upload: %w", err)
+		return nil, fmt.Errorf("failed to persist receipt for upload: %w", err)
 	}
 
 	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("failed to commit transaction: %w", err)
+		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
-	return nil
+	return receipt, nil
 }
 
 func (p *Pipeline) SyncPaperlessReceipts(ctx context.Context, tag int) (successCount int, failureCount int, err error) {
