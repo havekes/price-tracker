@@ -1,6 +1,7 @@
 package config
 
 import (
+	"log/slog"
 	"os"
 	"strconv"
 )
@@ -44,6 +45,11 @@ func getEnvInt(key string, fallback int) int {
 		if i, err := strconv.Atoi(v); err == nil {
 			return i
 		}
+		slog.Warn("non-numeric environment variable, using fallback",
+			"var", key,
+			"value", v,
+			"fallback", fallback,
+		)
 	}
 	return fallback
 }
