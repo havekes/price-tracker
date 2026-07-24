@@ -53,6 +53,12 @@ func TestGetDocuments(t *testing.T) {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
+		if r.URL.Query().Get("tags__id__all") != "10" {
+			t.Errorf("expected tags__id__all to be '10', got %q", r.URL.Query().Get("tags__id__all"))
+		}
+		if r.URL.Query().Get("correspondent__id") != "2" {
+			t.Errorf("expected correspondent__id to be '2', got %q", r.URL.Query().Get("correspondent__id"))
+		}
 		
 		corrID := 2
 		resp := DocumentListResponse{

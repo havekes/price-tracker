@@ -71,7 +71,6 @@ func (c *Client) doRequest(ctx context.Context, method, path string, query url.V
 		return nil, fmt.Errorf("invalid base URL: %w", err)
 	}
 
-	u.Path = url.PathEscape(u.Path) // Handle any existing path in base URL (if not already escaped)
 	u = u.JoinPath(path)
 	if query != nil {
 		u.RawQuery = query.Encode()
