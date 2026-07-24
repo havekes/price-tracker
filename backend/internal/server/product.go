@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/havekes/price-tracker/internal/db"
@@ -19,6 +20,20 @@ type UpdateProductRequest struct {
 type LinkProductsRequest struct {
 	ProductAID int64 `json:"product_a_id"`
 	ProductBID int64 `json:"product_b_id"`
+}
+
+type ProductResponse struct {
+	ID          int64     `json:"id"`
+	DisplayName string    `json:"display_name"`
+	BaseUnit    string    `json:"base_unit"`
+	CreatedAt   time.Time `json:"created_at"`
+}
+
+type LinkProductsResponse struct {
+	ID         int64     `json:"id"`
+	ProductAID int64     `json:"product_a_id"`
+	ProductBID int64     `json:"product_b_id"`
+	CreatedAt  time.Time `json:"created_at"`
 }
 
 func (s *Server) UpdateProductHandler(w http.ResponseWriter, r *http.Request) {
@@ -57,13 +72,23 @@ func (s *Server) UpdateProductHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(product)
+	json.NewEncoder(w).Encode(ProductResponse{
+		ID:          product.ID,
+		DisplayName: product.DisplayName,
+		BaseUnit:    product.BaseUnit,
+		CreatedAt:   product.CreatedAt,
+	})
 }
 
 func (s *Server) LinkProductsHandler(w http.ResponseWriter, r *http.Request) {
 	var req LinkProductsRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if req.ProductAID == 0 || req.ProductBID == 0 {
+		http.Error(w, "missing product_a_id or product_b_id", http.StatusBadRequest)
 		return
 	}
 
@@ -88,5 +113,10 @@ func (s *Server) LinkProductsHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(link)
+	json.NewEncoder(w).Encode(LinkProductsResponse{
+		ID:         link.ID,
+		ProductAID: link.ProductAID,
+		ProductBID: link.ProductBID,
+		CreatedAt:  link.CreatedAt,
+	})
 }
