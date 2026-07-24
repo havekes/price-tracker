@@ -70,6 +70,7 @@ func main() {
 
 	// Routes
 	r.Get("/api/health", srv.HealthHandler)
+	r.Get("/api/products/{id}", srv.GetProduct)
 
 	addr := fmt.Sprintf(":%d", cfg.Port)
 	httpSrv := &http.Server{

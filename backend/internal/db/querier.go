@@ -6,6 +6,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 )
 
 type Querier interface {
@@ -43,8 +44,10 @@ type Querier interface {
 	GetRawItem(ctx context.Context, id int64) (RawItem, error)
 	GetReceipt(ctx context.Context, id int64) (Receipt, error)
 	ListCorrespondents(ctx context.Context) ([]Correspondent, error)
+	ListLinkedProducts(ctx context.Context, productAID int64) ([]Product, error)
 	ListMarketplaceLinks(ctx context.Context) ([]MarketplaceLink, error)
 	ListMarketplaceLinksByProduct(ctx context.Context, productAID int64) ([]MarketplaceLink, error)
+	ListPriceHistoryByProduct(ctx context.Context, productID sql.NullInt64) ([]ListPriceHistoryByProductRow, error)
 	ListPriceRecords(ctx context.Context) ([]PriceRecord, error)
 	ListProducts(ctx context.Context) ([]Product, error)
 	ListRawItemsByReceipt(ctx context.Context, receiptID int64) ([]RawItem, error)
