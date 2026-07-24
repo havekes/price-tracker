@@ -1,62 +1,73 @@
 ---
 name: architecture-review
-description: Use when performing the post-phase architecture review of the codebase — evaluating structure, boundaries, data model, and tech choices against PROJECT.md goals, and writing the report with carry-over recommendations to .opencode/reviews/.
+description: Use when performing an on-demand architecture health check of the codebase — evaluating structure, boundaries, data model, and tech choices against PROJECT.md goals, writing a report to .opencode/reviews/, and emitting actionable architectural improvement tickets into .opencode/tickets/arch/.
 ---
 
 # Architecture Review
 
-After a phase fully merges, assess architectural health — not line-level code quality (PR review already did that), but whether the system is evolving toward the blueprint's goals on sound footing.
+Run when the user asks for an architecture review — decoupled from phases, repeatable any time. Goal: keep the project on rails by detecting architectural drift early and converting it into **executable tickets**, not just observations.
+
+You assess the whole codebase (or the focus area the user named), not a single PR — line-level code quality is PR review's job.
 
 ## Evaluation axes
 
-1. **Blueprint alignment** — does what exists match the phase goal and the overall PROJECT.md trajectory? Any drift that later phases will pay for?
+1. **Blueprint alignment** — does what exists match the PROJECT.md trajectory? Any drift that later phases will pay for?
 2. **Module boundaries** — are concerns separated (ingestion / persistence / API / UI)? Are dependencies one-directional, or is coupling creeping in?
 3. **Data model fit** — does the schema support what later phases need (price history queries, cross-marketplace linking, unit normalization)? Migrations manageable?
-4. **Contracts** — are API shapes, internal interfaces, and JSON schemas stable and documented enough for the next phase's tickets to build on?
+4. **Contracts** — are API shapes, internal interfaces, and JSON schemas stable and documented enough for upcoming tickets to build on?
 5. **Cross-cutting concerns** — configuration, error handling strategy, logging, test strategy. Consistent or ad-hoc per ticket?
 6. **Technical debt** — shortcuts taken under ticket scope pressure. Classify by interest rate: what compounds vs. what's inert?
-7. **Prior carry-overs** — read earlier reports in `.opencode/reviews/`: were previous carry-over items addressed or silently dropped?
+7. **Prior reviews** — read earlier reports in `.opencode/reviews/` and open tickets in `.opencode/tickets/arch/`: were previous findings addressed or silently dropped? Never re-emit a finding that already has an open ticket.
 
 ## Method
 
-- Read the phase goal in `PROJECT.md`, all phase tickets, and the phase's merged diffs (`git log`/`git show` on the merge commits).
-- Read the actual resulting code structure — judge what exists, not what was planned.
+- Read `PROJECT.md` (the trajectory), recent tickets in `.opencode/tickets/`, and merged history since the last review (`git log`/`git show` on merge commits).
+- Read the actual code structure — judge what exists, not what was planned.
 - Every finding cites concrete files/modules. No vague "could be cleaner".
 
-## Report — write to `.opencode/reviews/phase-<N>-architecture.md`
+## Output 1 — report: `.opencode/reviews/<YYYY-MM-DD>-architecture.md`
 
 ```markdown
 ---
-phase: <N>
 date: <YYYY-MM-DD>
 verdict: sound | sound-with-concerns | needs-remediation
 ---
 
-# Phase <N> Architecture Review
+# Architecture Review <YYYY-MM-DD>
 
 ## Summary
-<3–5 sentences: what was built, overall verdict, the single most important observation.>
+<3–5 sentences: current state, overall verdict, the single most important observation.>
 
 ## Findings
 ### 1. <title> [severity: concern | risk | debt]
 **Observation:** <what exists, with file/module references>
-**Impact:** <what it costs later phases if left alone>
-**Recommendation:** <concrete action>
+**Impact:** <what it costs if left alone>
+**Recommendation:** <concrete action — ticketed as <TICKET-ID>, or "observation only" with why>
 
 ### 2. ...
 
 ## What went well
 <Bullets — patterns worth keeping as conventions.>
 
-## Carry-over for next phase
-- [ ] <mandatory input for the next ticket-grooming run: specific, actionable, sized to fit inside a ticket>
-
-## Prior carry-over disposition
-<For each carry-over from the previous report: addressed / partially / dropped (why). Omit for phase 1.>
+## Prior finding disposition
+<For each open finding/carry-over from previous reports and each open ARCH ticket: addressed / partially / still open / dropped (why). Omit if no prior review exists.>
 ```
 
-## Rules for carry-overs
+## Output 2 — tickets: `.opencode/tickets/arch/<NN>-<slug>.md`
 
-- Each must be small enough to fold into a future ticket's scope — otherwise split it.
-- `needs-remediation` verdict requires at least one carry-over marked as blocking the next phase's grooming.
-- You write the report file and a summary as your final message (verdict, top findings, carry-over list). You never change implementation code.
+Every **actionable** finding becomes a ticket using the standard ticket template (see the `ticket-writing` skill), with:
+
+- id `ARCH-T<NN>` (`NN` = zero-padded recommended execution order, blocking issues first)
+- frontmatter `arch: "<YYYY-MM-DD>"` (the review date), branch `feat/arch-t<nn>-<slug>`
+- `source:` pointing at the report file
+- scope small enough for one PR — split the finding if it isn't
+- acceptance criteria that leave the codebase verifiably healthier, mechanically checkable
+- `depends_on` between the arch tickets where order matters (e.g. a contract change before its consumers)
+
+Findings that are pure observations (no action worth a PR) stay in the report only — say so in the finding's recommendation line.
+
+## Rules
+
+- A `needs-remediation` verdict requires at least one ticket whose technical notes mark it as blocking upcoming work.
+- You write the report and ticket files, then a summary as your final message: verdict, top findings, and the ticket list (id, title, depends_on).
+- You never change implementation code and never set ticket status — tickets start as `pending`, the orchestrator owns state from there.
