@@ -26,27 +26,33 @@ type PriceHistoryItem struct {
 	PurchasedAt       string   `json:"purchased_at"`
 }
 
+func jsonError(w http.ResponseWriter, message string, status int) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(map[string]string{"error": message})
+}
+
 func (s *Server) GetProduct(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		http.Error(w, "invalid product id", http.StatusBadRequest)
+		jsonError(w, "invalid product id", http.StatusBadRequest)
 		return
 	}
 
 	product, err := s.querier.GetProduct(r.Context(), id)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			http.Error(w, "product not found", http.StatusNotFound)
+			jsonError(w, "product not found", http.StatusNotFound)
 			return
 		}
-		http.Error(w, "database error", http.StatusInternalServerError)
+		jsonError(w, "database error", http.StatusInternalServerError)
 		return
 	}
 
 	linked, err := s.querier.ListLinkedProducts(r.Context(), id)
 	if err != nil {
-		http.Error(w, "database error", http.StatusInternalServerError)
+		jsonError(w, "database error", http.StatusInternalServerError)
 		return
 	}
 	if linked == nil {
@@ -55,7 +61,7 @@ func (s *Server) GetProduct(w http.ResponseWriter, r *http.Request) {
 
 	history, err := s.querier.ListPriceHistoryByProduct(r.Context(), sql.NullInt64{Int64: id, Valid: true})
 	if err != nil {
-		http.Error(w, "database error", http.StatusInternalServerError)
+		jsonError(w, "database error", http.StatusInternalServerError)
 		return
 	}
 

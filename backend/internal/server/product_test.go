@@ -89,6 +89,17 @@ func TestGetProductHandler(t *testing.T) {
 				if len(resp.PriceHistory) != 1 {
 					t.Errorf("expected 1 store in price history, got %v", len(resp.PriceHistory))
 				}
+			} else {
+				if ct := rr.Header().Get("Content-Type"); ct != "application/json" {
+					t.Errorf("expected Content-Type application/json, got %v", ct)
+				}
+				var errResp map[string]string
+				if err := json.NewDecoder(rr.Body).Decode(&errResp); err != nil {
+					t.Errorf("failed to decode error json: %v", err)
+				}
+				if errResp["error"] == "" {
+					t.Errorf("expected error message in response body")
+				}
 			}
 		})
 	}
