@@ -95,16 +95,6 @@ func TestUpdateProductHandler(t *testing.T) {
 				t.Errorf("expected status %d, got %d", tt.expectedStatus, rec.Result().StatusCode)
 			}
 
-			if tt.expectedStatus == http.StatusCreated {
-				var resp LinkProductsResponse
-				if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
-					t.Fatalf("failed to unmarshal response: %v", err)
-				}
-				if resp.ID != 1 || resp.ProductAID != 1 || resp.ProductBID != 2 {
-					t.Errorf("unexpected response body: %+v", resp)
-				}
-			}
-
 			if tt.expectedStatus == http.StatusOK {
 				var resp ProductResponse
 				if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
@@ -172,6 +162,16 @@ func TestLinkProductsHandler(t *testing.T) {
 
 			if rec.Result().StatusCode != tt.expectedStatus {
 				t.Errorf("expected status %d, got %d", tt.expectedStatus, rec.Result().StatusCode)
+			}
+
+			if tt.expectedStatus == http.StatusCreated {
+				var resp LinkProductsResponse
+				if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+					t.Fatalf("failed to unmarshal response: %v", err)
+				}
+				if resp.ID != 1 || resp.ProductAID != 1 || resp.ProductBID != 2 {
+					t.Errorf("unexpected response body: %+v", resp)
+				}
 			}
 		})
 	}
