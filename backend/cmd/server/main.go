@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	_ "github.com/jackc/pgx/v5/stdlib"
 
 	dbembed "github.com/havekes/price-tracker/db"
 	"github.com/havekes/price-tracker/internal/config"
@@ -29,12 +31,29 @@ func main() {
 
 	cfg := config.Load()
 
+	// Open a shared *sql.DB pool for the application.
+	db, err := sql.Open("pgx", cfg.DatabaseURL)
+	if err != nil {
+		slog.Error("failed to open database", "error", err)
+		os.Exit(1)
+	}
+	defer db.Close()
+
+	// Sensible pool defaults for a CLI-adjacent HTTP server.
+	db.SetMaxOpenConns(25)
+	db.SetMaxIdleConns(5)
+	db.SetConnMaxLifetime(5 * time.Minute)
+
 	// Apply database migration before starting the server.
-	// Idempotent — safe to run on every startup.
-	if err := store.Migrate(cfg.DatabaseURL, dbembed.Schema); err != nil {
+	// Reuses the shared pool — does not open its own connection.
+	if err := store.Migrate(db, dbembed.Schema); err != nil {
 		slog.Error("database migration failed", "error", err)
 		os.Exit(1)
 	}
+
+	// Build the dependency graph: *sql.DB → store.Querier → server.Server.
+	querier := store.New(db)
+	srv := server.New(querier)
 
 	r := chi.NewRouter()
 
@@ -43,18 +62,23 @@ func main() {
 	r.Use(middleware.RealIP)
 	r.Use(server.RequestLogging)
 	r.Use(middleware.Recoverer)
-	r.Use(middleware.Timeout(30 * time.Second))
+
+	// NOTE: No global chi middleware.Timeout is used. HTTP timeouts are managed
+	// at the http.Server level (ReadTimeout/WriteTimeout below). Routes that call
+	// the Vision LLM (Phase 3.2+, e.g., /api/sync, /api/receipts/upload) should
+	// use context.WithTimeout for per-call deadlines rather than a global middleware
+	// timeout, which can misbehave with large/streaming request bodies.
 
 	// Routes
-	r.Get("/api/health", server.HealthHandler)
+	r.Get("/api/health", srv.HealthHandler)
 
 	addr := fmt.Sprintf(":%d", cfg.Port)
-	srv := &http.Server{
+	httpSrv := &http.Server{
 		Addr:         addr,
 		Handler:      r,
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 15 * time.Second,
-		IdleTimeout:  60 * time.Second,
+		ReadTimeout:  30 * time.Second,
+		WriteTimeout: 60 * time.Second,
+		IdleTimeout:  120 * time.Second,
 	}
 
 	// Graceful shutdown — os.Interrupt covers SIGINT on Unix; no need for syscall.SIGINT.
@@ -63,7 +87,7 @@ func main() {
 
 	go func() {
 		slog.Info("server starting", "addr", addr)
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := httpSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			slog.Error("server error", "error", err)
 			os.Exit(1)
 		}
@@ -75,8 +99,14 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	if err := srv.Shutdown(ctx); err != nil {
+	if err := httpSrv.Shutdown(ctx); err != nil {
 		slog.Error("shutdown error", "error", err)
+		os.Exit(1)
+	}
+
+	// Close the database pool after the HTTP server has stopped.
+	if err := db.Close(); err != nil {
+		slog.Error("database close error", "error", err)
 		os.Exit(1)
 	}
 	slog.Info("server stopped")

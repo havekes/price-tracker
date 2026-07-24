@@ -5,28 +5,21 @@ import (
 	"database/sql"
 	"log/slog"
 	"time"
-
-	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
-// Migrate connects to the database using DATABASE_URL and applies the provided
-// schema SQL if the correspondent table does not exist. The operation is
-// idempotent because schemaSQL should use CREATE TABLE IF NOT EXISTS.
+// Migrate checks if the correspondent table exists and applies the provided
+// schema SQL if it doesn't. The operation is idempotent because schemaSQL
+// should use CREATE TABLE IF NOT EXISTS.
 //
+// It reuses the provided *sql.DB pool — does not open its own connection.
 // Call this once at startup before the HTTP server starts listening.
-func Migrate(databaseURL, schemaSQL string) error {
-	db, err := sql.Open("pgx", databaseURL)
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
+func Migrate(db *sql.DB, schemaSQL string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	// Check if the correspondent table exists.
 	var exists bool
-	err = db.QueryRowContext(ctx,
+	err := db.QueryRowContext(ctx,
 		`SELECT EXISTS (
 			SELECT 1 FROM information_schema.tables
 			WHERE table_schema = 'public' AND table_name = 'correspondent'
