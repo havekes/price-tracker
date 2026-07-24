@@ -25,3 +25,7 @@ RETURNING *;
 -- name: DeleteProduct :exec
 DELETE FROM product
 WHERE id = $1;
+
+-- name: GetProductByName :one
+SELECT * FROM product
+WHERE display_name = $1 LIMIT 1;
