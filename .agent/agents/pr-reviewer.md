@@ -2,8 +2,8 @@
 name: pr-reviewer
 description: Reviews a pull request against its ticket's acceptance criteria and returns an APPROVE or REQUEST_CHANGES verdict with findings. Spawned by the orchestration skill via invoke_subagent. Read-only — never modifies code or tickets.
 tools:
-  - read_file
   - view_file
+  - list_dir
   - grep_search
   - run_command
 subagent: true

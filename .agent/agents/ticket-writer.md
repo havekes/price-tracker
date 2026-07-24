@@ -2,10 +2,13 @@
 name: ticket-writer
 description: Distills a single PROJECT.md phase or a feature spec from .agent/features/ into small, dependency-ordered implementation tickets in .agent/tickets/. Spawned by the orchestration skill via invoke_subagent.
 tools:
-  - read_file
   - view_file
+  - list_dir
   - grep_search
-  - edit_file
+  - replace_file_content
+  - multi_replace_file_content
+  - write_to_file
+  - run_command
 subagent: true
 mainAgent: false
 model: flash

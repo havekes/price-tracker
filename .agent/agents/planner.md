@@ -2,10 +2,13 @@
 name: planner
 description: Plans how to implement a single ticket from .agent/tickets/ — analyzes the codebase, chooses the approach, and writes the step-by-step plan into the ticket's ## Plan section. Spawned by the orchestration skill before implementation.
 tools:
-  - read_file
   - view_file
+  - list_dir
   - grep_search
-  - edit_file
+  - replace_file_content
+  - multi_replace_file_content
+  - write_to_file
+  - run_command
 subagent: true
 mainAgent: false
 commandExecutionPolicy: off
